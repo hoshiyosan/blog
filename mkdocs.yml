@@ -1,0 +1,13 @@
+site_name: Sylvan's blog
+docs_dir: blog
+theme:
+  name: material
+  custom_dir: overrides
+plugins:
+    - search
+    - awesome-pages
+    - markdownextradata
+    # custom plugins
+    - git-dates
+markdown_extensions:
+  - meta

@@ -1,0 +1,10 @@
+[project]
+name = "blog_plugins"
+version = "0.0.1"
+dependencies = [
+    "requests",
+    'importlib-metadata; python_version<"3.8"',
+]
+
+[project.entry-points."mkdocs.plugins"]
+git-dates = 'mkdocs_git_dates_plugin:MkdocsGitDatesPlugin'
