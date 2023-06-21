@@ -1,0 +1,146 @@
+
+<div style="display: flex">
+    <div>
+        Favorite topics:<br>
+    </div>
+    <div id="tags"></div>
+</div>
+
+<main id="articles"></main>
+
+<script>
+function getFavoriteTopics(){
+    const favoriteTopics = localStorage.getItem("favoriteTopics");
+    if(!favoriteTopics){
+        return [];
+    }
+    return Object.keys(JSON.parse(favoriteTopics));
+}
+
+function removeTopicFromFavorites(topic){
+    const favoriteTopics = localStorage.getItem("favoriteTopics");
+    if(!favoriteTopics) return;
+    let topics = JSON.parse(favoriteTopics);
+    delete topics[topic];
+    localStorage.setItem("favoriteTopics", JSON.stringify(topics));
+    window.location.href = "";
+}
+
+function getRecentlyReadArticles(){
+    const storedValue = localStorage.getItem("recentlyReadArticles");
+    if(!storedValue){
+        return []
+    }
+    return storedValue.split(',');
+}
+
+function buildComparatorFromConfig(queryFilter){
+    const orderBy = queryFilter.orderBy === null ? "creation_date" : queryFilter.orderBy;
+    return (article1, article2)=>{
+        article1[orderBy] < article2[orderBy]
+    }
+}
+
+function buildFilterFromConfig(queryFilter){
+    const recentlyReadArticles = getRecentlyReadArticles();
+    const filterPrimitives = [];
+
+    if(queryFilter.topics && queryFilter.topics.length > 0){
+        filterPrimitives.push((article)=>{
+            for(let topic of queryFilter.topics){
+                if(article.topics.includes(topic)){
+                    return true;
+                }
+            }
+            console.log("Article filtered (does not match topics)", article.title);
+            return false;
+        });
+    }
+
+    if(queryFilter.excludeRead && recentlyReadArticles){
+        filterPrimitives.push((article)=>{
+            for(let articleURL of recentlyReadArticles){
+                if(article.link === articleURL){
+                    console.log("Article filtered (already read)", article.title)
+                    return false;
+                }
+            }
+            return true;
+        });
+    }
+
+    return (article)=>{
+        for(let filter of filterPrimitives){
+            if(!filter(article)){
+                return false
+            }
+        }
+        return true
+    }
+}
+
+
+class ArticlesManager{
+    constructor(){
+        this.articles = null;
+        this.changeCallback = null;
+    }
+    async getArticles(){
+        if(this.articles === null){
+            const response = await fetch("/search/articles.json");
+            const data = await response.json();
+            this.articles = data.articles;
+        }
+        return this.articles;
+    }
+    async filterArticles(queryFilter){
+        const articles = await this.getArticles();
+        console.log("filtering articles", articles);
+        let filteredArticles = articles.filter(buildFilterFromConfig(queryFilter)).sort(buildComparatorFromConfig(queryFilter));
+        console.log(queryFilter);
+        this.notifyChange(queryFilter, filteredArticles);
+    }
+    notifyChange(queryFilter, filteredArticles){
+        if(this.changeCallback){
+            this.changeCallback(queryFilter, filteredArticles);
+        }
+    }
+    onChange(callback){
+        this.changeCallback = callback;
+    }
+}
+
+const manager = new ArticlesManager();
+manager.onChange((queryFilter, articles)=>{
+    const articlesContainer = document.getElementById("articles");
+    const tagsContainer = document.getElementById("tags");
+
+    articlesContainer.innerHTML = "";
+
+    tagsContainer.innerHTML = "";
+    if(queryFilter.topics){
+        for(let topic of queryFilter.topics){
+            tagsContainer.innerHTML += `<span class="tag" onclick="removeTopicFromFavorites('${topic}')">${topic} <button>×</button></span>`;
+        }
+    }
+    
+    for(let article of articles){
+        articlesContainer.innerHTML += `
+            <a class="article" href="${article.link}">
+                <h2>${article.title}</h2>
+                <p>${article.summary}</p>
+                <i style="color: gray">${article.author}</i> - <i style="color: gray">${article.creation_date}</i>
+            </a>
+        `;
+    }
+
+    if(articles.length === 0){
+        let message = "You have read all of my articles for selected topics :)";
+        if(queryFilter.topics && queryFilter.topics.length > 0){
+            message += "<br><br>Try removing topic filters or come back later for more articles!";
+        }
+        articlesContainer.innerHTML = `<p>${message}</p>`;
+    }
+})
+manager.filterArticles({topics: getFavoriteTopics(), orderBy: "creation_date", excludeRead: true});
+</script>

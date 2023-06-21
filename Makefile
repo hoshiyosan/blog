@@ -24,6 +24,10 @@ serve: requires-venv ## Start a development server to preview blog
 build: requires-venv ## Build static blog as HTML from markdown
 	$(VIRTUALENV_PATH)/bin/mkdocs build
 
+format: ## Format python plugins code
+	isort --profile=black plugins/src
+	black -l 120 plugins/src
+
 image: ## Build docker image
 	docker build -t $(DOCKER_IMAGE_NAME) .
 
