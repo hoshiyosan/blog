@@ -9,5 +9,6 @@ plugins:
     - markdownextradata
     # custom plugins
     - git-dates
+    - blog
 markdown_extensions:
   - meta

@@ -1,0 +1,10 @@
+<div id="articles">
+    {% for article in articles %}
+    <a class="article" href="{{ article.link }}">
+        <h2>{{ article.title }}</h2>
+         <p class="metadata">{{ article.creation_date }} - <i>{{ article.author }}</i></p>
+        <p>{{ article.summary }}</p>
+       
+    </a>
+    {% endfor %}
+</div>

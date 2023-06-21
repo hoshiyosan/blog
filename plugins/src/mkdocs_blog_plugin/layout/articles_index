@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    #articles{margin-block-start: 2em !important;}
+    .article{
+        display: block;
+        padding: 1em;
+    }
+    .article:hover{
+        background-color: lightgray;
+        cursor: pointer;
+    }
+    .article > h2{
+        margin-block-start: 0;
+        color: black;
+    }
+    .article > .metadata{
+        color: gray;
+    }
+    .tag{
+        background-color: lightgray;
+        margin-left: 4px;
+        padding: 4px 10px;
+        border-radius: 8px;
+        cursor: pointer;
+    }
+    .tag > button{
+        padding: 0 0px 0 3px;
+        cursor: pointer;
+    }
+    .tag:hover{
+        color: white;
+        background-color: #4051b5;
+    }
+</style>
+
+<h1>{{ page.title }}</h1>
+<main>
+    {{ page.content }}
+</main>
+
+{% endblock %}
