@@ -4,16 +4,31 @@ name: Docker Continuous Delivery
 
 on:
   workflow_call:
+    inputs:
+      docker_image_name:
+        description: "Name of the image including namespace but without registry"
+        type: string
+        required: true
+      docker_build_context:
+        description: "Name of the image including namespace but without registry"
+        type: string
+        default: "."
+      docker_registry:
+        description: "Hostname of docker registry where images are published"
+        type: string
+        default: docker.io
+    secrets:
+      docker_username:
+        description: "Username used to publish image in docker registry"
+        required: true
+      docker_password:
+        description: "Password associated with docker_username"
+        required: true
     outputs:
       release_tag:
         description: "Docker tag of delivered image"
         value: ${{ jobs.compute_release_tag.outputs.release_tag }}
 
-env:
-  DOCKER_REGISTRY_URL: docker.io
-  DOCKER_ORG_NAME: sylvanld
-
-# Jobs triggered on workflow run.
 jobs:
   compute_release_tag:
     runs-on: ubuntu-latest
@@ -26,21 +41,13 @@ jobs:
   build-and-release-docker:
     runs-on: ubuntu-latest
     needs: compute_release_tag
-    
-    # this job will be played against each tuple of this matrix
-    strategy:
-      matrix:
-        include:
-          - image-name: blog
-            build-context: ./
 
     steps:
-      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v2
       
       - name: Login to docker registry      
-        run: echo -n "${{ secrets.DOCKER_PASSWORD }}" | docker login --username "${{ secrets.DOCKER_USERNAME }}" --password-stdin ${{ env.DOCKER_REGISTRY_URL }}
-      
+        run: echo -n "${{ secrets.docker_password }}" | docker login --username "${{ secrets.docker_username }}" --password-stdin ${{ inputs.docker_registry }}
+
       # Install QEMU to emulate different architecture (required to use buildx for ARM)
       - name: Set up QEMU
         if: success()
@@ -51,10 +58,9 @@ jobs:
         if: success()
         uses: docker/setup-buildx-action@v1.3.0
         with:
-          # Buildx version. (eg. v0.3.0)
           version: v0.3.0
           
-      # build and publish image for multiple architectures
+      # Build and publish image for multiple architectures
       - name: Build and publish
         if: success()
-        run: docker buildx build --platform linux/amd64,linux/arm64 --output type=image,push=true -t ${{ env.DOCKER_REGISTRY_URL }}/${{ env.DOCKER_ORG_NAME }}/${{ matrix.image-name }}:${{ needs.compute_release_tag.outputs.release_tag }} -t ${{ env.DOCKER_REGISTRY_URL }}/${{ env.DOCKER_ORG_NAME }}/${{ matrix.image-name }}:latest ${{ matrix.build-context }}
+        run: docker buildx build --platform linux/amd64,linux/arm64 --output type=image,push=true -t ${{ inputs.docker_registry }}/${{ inputs.docker_image_name }}:${{ needs.compute_release_tag.outputs.release_tag }} ${{ inputs.docker_build_context }}

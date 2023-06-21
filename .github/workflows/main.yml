@@ -1,0 +1,40 @@
+name: Kubernetes Deployment
+
+on:
+  # Automatically build a new version and deploy it when main branch is updated
+  push:
+    branches:
+      - main
+  
+  # Allows you to run this workflow manually to re-deploy selected version
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: Tag of docker image used for deployment
+        required: true
+
+jobs:
+  deliver:
+    uses: ./.github/workflows/continuous-delivery-docker.yml
+    with:
+      docker_image_name: sylvanld/blog
+    secrets:
+      docker_username: ${{ secrets.DOCKERHUB_USERNAME }}
+      docker_password: ${{ secrets.DOCKERHUB_PASSWORD }}
+
+  deploy-manual:
+    if: github.event_name == 'workflow_dispatch'
+    uses: ./.github/workflows/continuous-deployment-kubernetes.yml
+    secrets: inherit
+    with:
+      release_tag: ${{ github.event.inputs.release_tag }}
+      kubernetes_namespace: sylvan-ovh
+
+  deploy-auto:
+    if: github.ref == 'refs/heads/main' #&& github.event.pull_request.merged == true
+    uses: ./.github/workflows/continuous-deployment-kubernetes.yml
+    secrets: inherit
+    needs: deliver
+    with:
+      release_tag: ${{ needs.deliver.outputs.release_tag }}
+      kubernetes_namespace: sylvan-ovh
