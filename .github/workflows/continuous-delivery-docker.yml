@@ -12,6 +12,8 @@ on:
 env:
   DOCKER_REGISTRY_URL: docker.io
   DOCKER_ORG_NAME: sylvanld
+  DOCKER_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+  DOCKER_PASSWORD: ${{ secrets.DOCKERHUB_PASSWORD }}
 
 # Jobs triggered on workflow run.
 jobs:
