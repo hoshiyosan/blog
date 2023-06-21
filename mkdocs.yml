@@ -1,4 +1,4 @@
-site_name: Sylvan's blog
+site_name: Sylvan's Blog
 docs_dir: blog
 theme:
   name: material
